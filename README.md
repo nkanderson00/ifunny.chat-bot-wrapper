@@ -2,6 +2,7 @@
 Python implementation of the ifunny.chat website for bots
 
 ## Usage:
+pip install -r requirements.txt
 python3 ifunnybot.py
 
 ### You will need an api key to run this
