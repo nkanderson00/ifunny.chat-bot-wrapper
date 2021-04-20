@@ -7,7 +7,7 @@ Python implementation of the ifunny.chat website for bots
 2. python3 ifunnybot.py
 
 ### You will need an api key to run this
-Get one from egg#3897 on Discord
+- Get one from egg#3897 on Discord
 
 ---
 
