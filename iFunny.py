@@ -195,6 +195,7 @@ class Bot:
 		self.events = {}
 		self.cooldowns = {}
 		self.timekeeping = {}
+		self.developer_commands = []
 		self.developer = None
 		self.help_categories = {}
 		self.command_help_messages = {}
@@ -261,6 +262,9 @@ class Bot:
 					
 			if cooldown := kwargs.get("cooldown"):
 				self.cooldowns[function] = cooldown
+				
+			if kwargs.get("developer"):
+				self.developer_commands.append(function)
 			
 			def decorator(*dargs, **dkwargs):
 				return function(*dargs, **dkwargs)
@@ -468,6 +472,9 @@ class Bot:
 		
 		
 	async def run_command(self, function, ctx):
+	
+		if function in self.developer_commands and not ctx.author.is_developer:
+			return
 	
 		ratelimit = self.cooldowns.get(function)
 		now = time.time()
