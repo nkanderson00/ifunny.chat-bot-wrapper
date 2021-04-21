@@ -85,12 +85,13 @@ class Parser:
 		ctx.author = User(frame["user"], bot)
 		ctx.message.author = ctx.author
 		ctx.chat.message = ctx.message
+		ctx.author.is_developer = ctx.author.id == bot.developer
 				
 		if frame["message"]["text"].startswith(bot.prefix):
 			base_name = frame["message"]["text"].strip(bot.prefix).split()[0]
 				
 			if function := bot.commands.get(base_name):
-				bot.run_command(function, ctx)
+				await bot.run_command(function, ctx)
 				
 		else:
 			if bot.on_message:
@@ -192,6 +193,9 @@ class Bot:
 		self.prefix = prefix
 		self.commands = {}
 		self.events = {}
+		self.cooldowns = {}
+		self.timekeeping = {}
+		self.developer = None
 		self.help_categories = {}
 		self.command_help_messages = {}
 		self.member_list_queues = {}
@@ -254,6 +258,9 @@ class Bot:
 			if aliases := kwargs.get("aliases"):
 				for alias in aliases:
 					self.commands[alias] = function
+					
+			if cooldown := kwargs.get("cooldown"):
+				self.cooldowns[function] = cooldown
 			
 			def decorator(*dargs, **dkwargs):
 				return function(*dargs, **dkwargs)
@@ -460,7 +467,30 @@ class Bot:
 		cprint(("Ratelimit unlocked", "magenta"))
 		
 		
-	def run_command(self, function, ctx):
+	async def run_command(self, function, ctx):
+	
+		ratelimit = self.cooldowns.get(function)
+		now = time.time()
+		
+		if not ctx.author.is_developer:
+			if ratelimit:
+				user_timekeeping = self.timekeeping.get(ctx.author.id)
+				if user_timekeeping:
+					ratelimit_expires_at = user_timekeeping.get(function)
+					if ratelimit_expires_at:
+						if now < ratelimit_expires_at:
+							remaining_time = int(ratelimit_expires_at-now)
+							remaining_time_str = seconds_to_str(remaining_time)
+							return await ctx.chat.send(f"You must wait {remaining_time_str} before you can use this command again")
+						else:
+							del self.timekeeping[ctx.message.author.id][function]
+		
+		if not self.timekeeping.get(ctx.author.id):
+			self.timekeeping[ctx.author.id] = {}
+			
+		if self.cooldowns.get(function):
+			self.timekeeping[ctx.author.id][function] = now+self.cooldowns[function]
+		
 		cprint((ctx.author.id, "yellow"), (ctx.author.nick, "green"), (ctx.message.text.strip(self.prefix), "cyan"))
 		self.run_callback(function, ctx, *ctx.message.args_list)
 		
@@ -506,5 +536,26 @@ class Bot:
 		
 		
 		
-		
+def seconds_to_str(t):
+	
+	y, r = divmod(t, 31557600)
+	month, r = divmod(r, 2629800)
+	d, r = divmod(r, 86400)
+	h, r = divmod(r, 3600)
+	m, s = divmod(r, 60)
+	durations = [[int(y),"year"],[int(month),"month"],[int(d),"day"],[int(h),"hour"],[int(m),"minute"],[int(s),"second"]]
+	durations = [i for i in durations if i[0]]
+	s_durations = []
+
+	for count, i in enumerate(durations):
+		if i[0] > 1:
+			durations[count][1] += "s"
+			
+	durations = [str(i[0])+" "+i[1] for i in durations]
+	total = ", ".join(durations)
+
+	if t > 0:
+		return total
+	
+	return "1 second"
 		
