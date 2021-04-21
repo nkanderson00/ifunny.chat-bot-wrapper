@@ -10,6 +10,8 @@ prefix = "-"
 
 bot = iFunny.Bot(email, password, region, api_key, prefix)
 
+bot.developer = None #(you can choose to insert the user id of a user who is in charge of the bot)
+
 @bot.command(name="hi", aliases=["hey","heyy"], help_message="I will say hi to you")
 async def hello(ctx, *args):
 	"""docstring overridden by decorator kwargs help_message"""
@@ -87,6 +89,16 @@ async def image(ctx, *args):
 				await chat.upload(await r.read())
 			except:
 				await chat.send("There was an error sending the image")
+				
+				
+@bot.command(developer=True, hide_help=True)
+async def secret(ctx, *args):
+	"""A developer only command"""
+	
+	chat = ctx.chat
+	author = ctx.author
+	
+	await chat.send(f"This command can only be done by you, {author.name}")
 	
 	
 """
