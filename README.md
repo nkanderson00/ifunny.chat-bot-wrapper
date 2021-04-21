@@ -11,7 +11,23 @@ Python implementation of the ifunny.chat website for bots
 
 ---
 
-You will need to put your account email and password, as well as region in enum ("United States", "Brazil"), and pick a prefix that others don't use, into the bot.py file.
+You will need to put your account email and password, as well as region in enum `("United States", "Brazil")`, and pick a prefix that others don't use, into the `bot.py` file.
 If you want the bot available both in Brazil and the US, you will need to run a second instance of the bot with the other region.
 
 Use the latest version of python (specifically >= 3.8)
+
+---
+
+## bot.command() decorator usage
+
+The command decorator is used to tell the bot what functions are commands. It takes several optional kwargs. 
+
+- By default, the name of the function acts as the name of the command. This can be overridden with the kwarg: `name = "..."` where the string will replace the function name as the invocable command. It may include numbers or special characters that may not be permitted in a function name for example.
+- The *aliases* kwarg takes a list of strings which can be used as additional command names. This means the same command may be called by multiple other names. `aliases = ["...", "...."]`.
+- The bot comes with a built-in `{prefix}help` command. The following points discuss this. If you include a docstring in the command function, it will be used by the bot as the command's help message string when you call `{prefix}help {command name}`. The docstring help message may be replaced by the kwarg: `help_message = "..."`.
+- You can specify the command category within the help message with the kwarg: `help_category = "..."`. The category can be anything. Multiple commands with the same category will be grouped.
+- Finally, if you wish to exclude a command from the help message, use `hide_help = True`.
+
+## bot.event() decorator usage
+
+The event decorator is optional and it takes no args or kwargs. Functions with this decorator will be invoked when the respective "event" occurs within a chat. The functions with these decorators can only have the following names: `user_join, user_leave, user_kick, channel_change, on_join, on_message`. As you can tell by the names, when the bot detects such an event, those functions will be executed. If you have no need for the bot to do something on a certain event, there is no need to have the function. Again, these callbacks are optional.
