@@ -26,7 +26,8 @@ The command decorator is used to tell the bot what functions are commands. It ta
 - The *aliases* kwarg takes a list of strings which can be used as additional command names. This means the same command may be called by multiple other names. `aliases = ["...", "...."]`.
 - The bot comes with a built-in `{prefix}help` command. The following points discuss this. If you include a docstring in the command function, it will be used by the bot as the command's help message string when you call `{prefix}help {command name}`. The docstring help message may be replaced by the kwarg: `help_message = "..."`.
 - You can specify the command category within the help message with the kwarg: `help_category = "..."`. The category can be anything. Multiple commands with the same category will be grouped.
-- Finally, if you wish to exclude a command from the help message, use `hide_help = True`.
+- If you wish to exclude a command from the help message, use `hide_help = True`.
+- Finally, if the `bot.developer` variable has been set, the user with the matching id will be able to execute commands that have the kwarg `developer = True` and nobody else will.
 
 ## bot.event() decorator usage
 
