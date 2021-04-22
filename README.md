@@ -12,7 +12,6 @@ Python implementation of the ifunny.chat website for bots
 ---
 
 You will need to put your account email and password, as well as region which can be either `United States` or `Brazil`, and pick a prefix that others don't use, into the `bot.py` file.
-If you want the bot available both in Brazil and the US, you will need to run a second instance of the bot with the other region.
 
 Use the latest version of python (specifically >= 3.8)
 
