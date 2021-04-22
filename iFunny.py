@@ -168,6 +168,9 @@ class User(CTXtype):
 	async def send(self, message):
 		await self.bot.send_message(self.chat_id, message)
 		
+	async def upload(self, data):
+		await self.bot.upload(self.chat_id, data)
+		
 
 class Message(CTXtype):
 	def __init__(self, data, bot):
@@ -178,6 +181,9 @@ class Message(CTXtype):
 		self.args = " ".join(self.args_list)
 		self.ts = self.pub_at
 		self.ping = int(time.time()*1000)-self.ts
+		
+	def __eq__(self, other):
+		return self.text == other.text
 
 
 class Bot:
