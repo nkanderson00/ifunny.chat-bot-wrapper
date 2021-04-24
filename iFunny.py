@@ -1,5 +1,6 @@
 import requests
 import websockets
+import simplejson
 import json
 import asyncio
 import aiohttp
@@ -10,7 +11,7 @@ import time
 import textwrap
 import sys
 
-host = "http://api.ifunny.chat"
+host = "https://api.ifunny.chat"
 
 
 def cprint(*args, end_each=" ", end_all=""):
@@ -227,7 +228,7 @@ class Bot:
 			login = requests.post(url, data=payload)
 			login = login.json()
 			
-		except json.decoder.JSONDecodeError:
+		except (json.decoder.JSONDecodeError, simplejson.errors.JSONDecodeError):
 			raise LoginError("The server accepted the login request but did not reply. Try again later.")
 		
 		except:
@@ -297,7 +298,11 @@ class Bot:
 		
 
 	def run(self):
-		asyncio.run(self.run_tasks())
+		try:
+			asyncio.run(self.run_tasks())
+		except:
+			cprint(("Bot has shut down", "red"))
+			sys.exit(0)
 		
 	def disconnect(self):
 		self.open = False
@@ -310,7 +315,7 @@ class Bot:
 		while not connected:
 		
 			try:
-				self.ws = await websockets.connect("ws://api.ifunny.chat:11163/ws/"+self.bearer)
+				self.ws = await websockets.connect("wss://api.ifunny.chat/ws/"+self.bearer)
 				
 				ws_status = json.loads(await self.ws.recv())
 
@@ -328,6 +333,9 @@ class Bot:
 				else:
 					connected = True
 					break
+					
+			except KeyboardInterrupt:
+				return self.disconnect()
 
 			except:
 				cprint(("Error connecting to websocket", "red"))
@@ -366,8 +374,8 @@ class Bot:
 				cprint(("Disconnected from server due to error", "red"))
 				await self.connect_ws()
 				
-			except:
-				traceback.print_exc()
+			except KeyboardInterrupt:
+				return self.disconnect()
 						
 
 	async def message_queuer(self):
@@ -398,8 +406,7 @@ class Bot:
 			try:
 				payload = json.loads(bytes.fromhex(Parser.version).decode("utf-8"))
 			except:
-				self.disconnect()
-				return
+				return self.disconnect()
 
 			await self.ws.send(
 				json.dumps({"type": "message", "message": message,
