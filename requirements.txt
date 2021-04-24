@@ -2,3 +2,4 @@ termcolor
 aiohttp
 websockets
 requests
+simplejson
