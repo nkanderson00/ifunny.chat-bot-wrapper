@@ -136,6 +136,9 @@ class Chat(CTXtype):
 	def __eq__(self, other):
 		return self.id == other.id
 		
+	def __ne__(self, other):
+		return self.id != other.id
+		
 	async def send(self, message):
 		if self.yield_ratelimit and self.bot.ratelimited: return
 		author_name = None
@@ -166,6 +169,9 @@ class User(CTXtype):
 	def __eq__(self, other):
 		return self.id == other.id
 		
+	def __ne__(self, other):
+		return self.id != other.id
+		
 	async def send(self, message):
 		await self.bot.send_message(self.chat_id, message)
 		
@@ -185,6 +191,9 @@ class Message(CTXtype):
 		
 	def __eq__(self, other):
 		return self.text == other.text
+		
+	def __ne__(self, other):
+		return self.text != other.text
 
 
 class Bot:
@@ -301,6 +310,7 @@ class Bot:
 		try:
 			asyncio.run(self.run_tasks())
 		except:
+			traceback.print_exc()
 			cprint(("Bot has shut down", "red"))
 			sys.exit(0)
 		
