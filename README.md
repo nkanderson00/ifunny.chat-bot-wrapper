@@ -2,9 +2,10 @@
 Python implementation of the ifunny.chat website for bots
 
 ## Usage:
-1. pip install -r requirements.txt
-2. put your data into bot.py
-3. python3 bot.py
+1. clone the repository to your disk
+2. pip install -r requirements.txt
+3. put your data into bot.py
+4. python3 bot.py
 
 ### You will need an api key to run this
 - Get one from egg#3897 on Discord
