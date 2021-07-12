@@ -100,6 +100,7 @@ class Parser:
 	
 
 class CTX:
+	
 	bot = None
 	chat = None
 	message = None
@@ -119,6 +120,7 @@ class CTX:
 	
 	
 class CTXtype:
+	
 	def __init__(self, data, bot):
 		self.bot = bot
 		for k, v in data.items():
@@ -126,6 +128,7 @@ class CTXtype:
 		  
 		  
 class Chat(CTXtype):
+	
 	def __init__(self, data, bot):
 		super().__init__(data, bot)
 		self.author = None
@@ -161,6 +164,7 @@ class Chat(CTXtype):
 		
 			
 class User(CTXtype):
+	
 	def __init__(self, data, bot):
 		super().__init__(data, bot)
 		self.chat_id = bot.user_id+"_"+self.id
@@ -180,6 +184,7 @@ class User(CTXtype):
 		
 
 class Message(CTXtype):
+	
 	def __init__(self, data, bot):
 		super().__init__(data, bot)
 		self.author = None
