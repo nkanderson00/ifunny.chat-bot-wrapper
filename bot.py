@@ -63,7 +63,7 @@ async def invite(ctx, *args):
 	if not args:
 		return await chat.send("Specify a user to invite")
 	
-	user = await ctx.user_by_nick(args[0])
+	user = await ctx.user(args[0])
 	
 	if not await chat.has_member(user):
 		await chat.invite(user)
