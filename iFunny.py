@@ -55,7 +55,7 @@ class Parser:
 	async def error(bot, ctx, frame):
 		if frame["error"] == "message_rate_limit":
 			bot.ratelimit()
-			await bot.message_queue.put((bot.prev_chat_id, bot.prev_message, bot.prev_user_name))
+			await bot.message_queue.put((bot.prev_chat_id, bot.prev_message, bot.prev_nick))
 				
 	@staticmethod
 	async def chat_event(bot, ctx, frame):
@@ -99,24 +99,39 @@ class Parser:
 				bot.run_callback(bot.on_message, ctx)
 	
 
+
+async def user_by_nick(nick: str, bot=None):
+	data = await get_request(host+"/user_by_nick/"+nick)
+	if data["status"] == 200:
+		return User(data["data"], bot)
+		
+async def user_by_id(user_id: str, bot=None):
+	data = await get_request(host+"/user/"+user_id)
+	if data["status"] == 200:
+		return User(data["data"], bot)
+
+
+
 class CTX:
 	
-	bot = None
 	chat = None
 	message = None
 	author = None
 	user = None
 	inviter = None
 	
-	async def user_by_nick(self, user_name: str):
-		data = await get_request(host+"/user_by_nick/"+user_name)
-		if data["status"] == 200:
-			return User(data["data"], self.bot)
-			
+	def __init__(self, bot=None):
+		self.bot = bot
+		
+	async def user(self, nick_or_id):
+		return await(user(nick_or_id, self.bot))
+		
+	async def user_by_nick(self, nick: str):
+		return user_by_nick(nick, self.bot)
+		
 	async def user_by_id(self, user_id: str):
-		data = await get_request(host+"/user/"+user_id)
-		if data["status"] == 200:
-			return User(data["data"], self.bot)
+		return user_by_id(nick, self.bot)
+		
 	
 	
 class CTXtype:
@@ -182,6 +197,17 @@ class User(CTXtype):
 	async def upload(self, data):
 		await self.bot.upload(self.chat_id, data)
 		
+		
+async def user(nick_or_id: str, bot=None):
+	
+	nick_or_id = nick_or_id.lower()
+	
+	if len(nick_or_id) == 24 and nick_or_id[0].isdigit() and sum([1 for i in nick_or_id if ord(i) >= 103]): #most likely to be an id
+		if test_user := await user_by_id(nick_or_id, bot):
+			return test_user
+	
+	return await user_by_nick(nick_or_id, bot)
+	
 
 class Message(CTXtype):
 	
@@ -226,7 +252,7 @@ class Bot:
 		self.ratelimited = False
 		self.open = True
 		self.on_join = self.on_message = None
-		self.prev_chat_id = self.prev_message = self.prev_user_name = None
+		self.prev_chat_id = self.prev_message = self.prev_nick = None
 		self.generate_help_command()
 		self.login()
 		
@@ -312,14 +338,24 @@ class Bot:
 		
 
 	def run(self):
+		
 		try:
 			asyncio.run(self.run_tasks())
-		except:
-			traceback.print_exc()
+		
+		except KeyboardInterrupt:
+			print()
 			cprint(("Bot has shut down", "red"))
+		
+		except:
+			cprint(("Bot has shut down due to error", "red"))
+			traceback.print_exc()
+		
+		finally:
 			sys.exit(0)
+			
 		
 	def disconnect(self):
+		cprint(("Shutting down bot...", "red"))
 		self.open = False
 		
 		
@@ -404,9 +440,10 @@ class Bot:
 				queue_dict = {}
 				
 				while not self.message_queue.empty():
-					chat_id, message, user_name = await self.message_queue.get()
+					chat_id, message, nick = await self.message_queue.get()
+					message = str(message)
 					if not queue_dict.get(chat_id): queue_dict[chat_id] = []
-					if user_name: message = user_name+": "+message
+					if nick: message = nick+": "+message
 					queue_dict[chat_id].append(message)
 					
 				for k, v in queue_dict.items():
@@ -416,7 +453,7 @@ class Bot:
 					
 				continue
 					
-			chat_id, message, user_name = await self.message_queue.get()
+			chat_id, message, nick = await self.message_queue.get()
 			
 			try:
 				payload = json.loads(bytes.fromhex(Parser.version).decode("utf-8"))
@@ -430,15 +467,15 @@ class Bot:
 				
 			self.prev_chat_id = chat_id
 			self.prev_message = message
-			self.prev_user_name = user_name
+			self.prev_nick = nick
 			
 			
-	async def send_message(self, chat_id, message, user_name=None):
+	async def send_message(self, chat_id, message, nick=None):
 	
 		chunks = textwrap.wrap(str(message), 500, break_long_words=True, replace_whitespace=False)
 		
 		for message in chunks:
-			await self.message_queue.put((chat_id, message, user_name))
+			await self.message_queue.put((chat_id, message, nick))
 			
 
 	async def accept_invite(self, ctx):
@@ -478,11 +515,11 @@ class Bot:
 		
 		if response["error"]:
 			raise Exception(response)
+			
 		
 	async def parse(self, frame):
 	
-		ctx = CTX()
-		ctx.bot = self
+		ctx = CTX(self)
 	
 		if hasattr(Parser, frame["type"]):
 			await getattr(Parser, frame["type"])(self, ctx, frame)
