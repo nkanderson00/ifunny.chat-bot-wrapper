@@ -31,10 +31,14 @@ The command decorator is used to tell the bot what functions are commands. It ta
 
 ## bot.event() decorator usage
 
-The event decorator is optional and it takes no args or kwargs. Functions with this decorator will be invoked when the respective "event" occurs within a chat. The functions with these decorators can only have the following names: `user_join, user_leave, user_kick, channel_change, on_join, on_message`. As you can tell by the names, when the bot detects such an event, those functions will be executed. If you have no need for the bot to do something on a certain event, there is no need to have the function. Again, these callbacks are optional.
+The event decorator is optional and it takes no args or kwargs. Functions with this decorator will be invoked when the respective "event" occurs within a chat. The functions with these decorators can only have the following names: `user_join, user_leave, user_kick, channel_change, on_join, on_message, on_file`. As you can tell by the names, when the bot detects such an event, those functions will be executed. If you have no need for the bot to do something on a certain event, there is no need to have the function. Again, these callbacks are optional.
 
 ## ctx object
 
 The ctx object passed in to the commands and events is similar to the discord.py ctx. Its attributes include `bot, chat, message, author, user, inviter` bot is the instance of the bot, chat is the chat object which contains several functions and attributes, message is a message object which contains message related attributes. Author, user, and inviter are all user objects and they are used in commands, chat events, and invitations respectively. Invitations are handled internally so the inviter attribute will probably not be used.
 
 The chat, user, and message objects each contain an equality operator `==`. Additionally, the chat object contains the following async functions: `send, upload, members, has_member, invite`, and the user object has `send, upload`. If you want to see what other attributes each object has, just `print(dir({the_object}))` on it; they are too numerous to describe.
+
+## async ctx.chat.input() function
+
+Use this to grab non-command messages (or files or both) within an active command. There is an example of this function in bot.py. You can use this as a one-liner to grab the next immediate message someone sends in the chat or use it in a loop to accept many responses (you are responsible for breaking the loop). Additionally, input() takes two optional arguments: `type` and `timeout`. If left blank, `type` defaults to `Message` and `timeout` defaults to `None`. For `type` you can specify `iFunny.Message`, `iFunny.File`, or, `any` for either.
