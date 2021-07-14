@@ -169,45 +169,6 @@ class CTXtype:
 		self.bot = bot
 		for k, v in data.items():
 		  setattr(self, k, v)
-		  
-		  
-class Chat(CTXtype):
-	
-	def __init__(self, data, bot):
-		super().__init__(data, bot)
-		self.author = None
-		self.message = None
-		self.inviter = None
-		self.yield_ratelimit = False
-		
-	def __eq__(self, other):
-		return self.id == other.id
-		
-	def __ne__(self, other):
-		return self.id != other.id
-		
-	async def send(self, message):
-		if self.yield_ratelimit and self.bot.ratelimited: return
-		author_name = None
-		if self.author: author_name = self.author.nick
-		await self.bot.send_message(self.id, message, author_name)
-		
-	async def upload(self, data):
-		await self.bot.upload(self.id, data)
-		
-	async def members(self):
-		return await self.bot.get_members(self.id)
-		
-	async def has_member(self, user):
-		for i in await self.members():
-			if user == i: return True
-		return False
-		
-	async def invite(self, user):
-		await self.bot.invite(self.id, user.id)
-		
-	async def input(self, type=None, timeout=None):
-		return await self.bot.input(self.id, type, timeout)
 		
 			
 class User(CTXtype):
@@ -276,6 +237,45 @@ class File(CTXtype):
 		
 	def __ne__(self, other):
 		return self.hash != other.hash
+		
+		
+class Chat(CTXtype):
+	
+	def __init__(self, data, bot):
+		super().__init__(data, bot)
+		self.author = None
+		self.message = None
+		self.inviter = None
+		self.yield_ratelimit = False
+		
+	def __eq__(self, other):
+		return self.id == other.id
+		
+	def __ne__(self, other):
+		return self.id != other.id
+		
+	async def send(self, message):
+		if self.yield_ratelimit and self.bot.ratelimited: return
+		author_name = None
+		if self.author: author_name = self.author.nick
+		await self.bot.send_message(self.id, message, author_name)
+		
+	async def upload(self, data):
+		await self.bot.upload(self.id, data)
+		
+	async def members(self):
+		return await self.bot.get_members(self.id)
+		
+	async def has_member(self, user):
+		for i in await self.members():
+			if user == i: return True
+		return False
+		
+	async def invite(self, user):
+		await self.bot.invite(self.id, user.id)
+		
+	async def input(self, type=Message, timeout=None):
+		return await self.bot.input(self.id, type, timeout)
 
 
 class Bot:
@@ -497,7 +497,7 @@ class Bot:
 			self.run_callback(callback, ctx)
 			
 			
-	async def input(self, chat_id, type=any, timeout=None):
+	async def input(self, chat_id, type=Message, timeout=None):
 		
 		if not self.siphons.get(chat_id):
 			self.siphons[chat_id] = {}
