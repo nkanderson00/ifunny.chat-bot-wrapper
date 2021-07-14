@@ -42,3 +42,7 @@ The chat, user, and message objects each contain an equality operator `==`. Addi
 ## async ctx.chat.input() function
 
 Use this to grab non-command messages (or files or both) within an active command. There is an example of this function in bot.py. You can use this as a one-liner to grab the next immediate message someone sends in the chat or use it in a loop to accept many responses (you are responsible for breaking the loop). Additionally, input() takes two optional arguments: `type` and `timeout`. If left blank, `type` defaults to `Message` and `timeout` defaults to `None`. For `type` you can specify `iFunny.Message`, `iFunny.File`, or, `any` for either.
+
+### TODO
+
+Need to add blacklisting functionality. Might consider adding built-in user data file support
