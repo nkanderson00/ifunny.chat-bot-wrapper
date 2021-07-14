@@ -31,6 +31,29 @@ async def say(ctx, *args):
 	message = ctx.message
 
 	await chat.send(message.args)
+	
+	
+@bot.command(help_category="general")
+async def mimic(ctx, *args):
+	"""A long-lived command example. I mimic what you say."""
+
+	chat = ctx.chat
+	
+	await chat.send("I will now repeat you. Say stop to stop me.")
+	
+	while message := await chat.input(type=any): #iFunny.Message or iFunny.File or any
+		
+		if isinstance(message, iFunny.File):
+			await chat.send({"img": "Image", "video": "Video"}[message.type])
+		
+		elif isinstance(message, iFunny.Message):
+		
+			if message.text.lower() == "stop":
+				return await chat.send("ok lol")
+			
+			await chat.send(message.text)
+			
+	await chat.send("No longer mimicking")
 		
 		
 @bot.command(hide_help=True)
@@ -142,6 +165,12 @@ async def on_message(ctx):
 	responses = ["gm", "good morning", "gn", "good night"]
 	if ctx.message.text.lower() in responses:
 		await ctx.chat.send(random.choice(responses))
+		
+@bot.event()
+async def on_file(ctx):
+	"""runs when someone sends an image in chat. neither self nor bots are ignored"""
+	
+	return
 
 bot.run()
 
