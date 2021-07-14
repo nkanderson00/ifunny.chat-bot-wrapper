@@ -27,6 +27,7 @@ async def get_request(url):
 		async with session.get(url) as r: 
 			return await r.json()
 			
+			
 async def post_request(url, data=None):
 	async with aiohttp.ClientSession() as session:
 		async with session.post(url, data=data) as r: 
@@ -41,40 +42,53 @@ class Parser:
 
 	@staticmethod
 	async def chat_list(bot, ctx, frame):
+		
 		bot.chats = [Chat(i, bot) for i in frame["chat_list"]]
+
 
 	@staticmethod
 	async def invitations(bot, ctx, frame):
+		
 		for i in frame["invitations"]:
 			ctx.chat = Chat(i["chat"], bot)
 			ctx.chat.inviter = User(i["inviter"], bot)
 			await bot.accept_invite(ctx)
 			cprint(("Joined chat", "magenta"), (i["chat"]["id"], "yellow"))
 				
+				
 	@staticmethod
 	async def error(bot, ctx, frame):
+		
 		if frame["error"] == "message_rate_limit":
 			bot.ratelimit()
 			await bot.message_queue.put((bot.prev_chat_id, bot.prev_message, bot.prev_nick))
 				
+				
 	@staticmethod
 	async def chat_event(bot, ctx, frame):
+		
 		if function := bot.events.get(frame["chat_event"]):
 			ctx.chat = Chat(frame["chat"], bot)
+			
 			if frame["user"]:
 				if frame["user"]["id"] == bot.user_id: return
 				ctx.user = User(frame["user"], bot)
+			
 			ctx.chat.yield_ratelimit = True
 			bot.run_callback(function, ctx)
 				
+				
 	@staticmethod
 	async def member_list(bot, ctx, frame):
+		
 		if chat_id := bot.member_request_ids.get(frame["response_to"]):
 			if q := bot.member_list_queues.get(chat_id):
 				await q.put(frame["member_list"])
 		
+		
 	@staticmethod
 	async def message(bot, ctx, frame):
+		
 		if frame["user"]["id"] == bot.user_id:
 			return
 			
@@ -86,6 +100,7 @@ class Parser:
 		ctx.author = User(frame["user"], bot)
 		ctx.message.author = ctx.author
 		ctx.chat.message = ctx.message
+		ctx.message.chat = ctx.chat
 		ctx.author.is_developer = ctx.author.id == bot.developer
 				
 		if frame["message"]["text"].startswith(bot.prefix):
@@ -95,21 +110,36 @@ class Parser:
 				await bot.run_command(function, ctx)
 				
 		else:
-			if bot.on_message:
-				bot.run_callback(bot.on_message, ctx)
-	
+			await bot.siphon_input(bot.on_message, ctx)
+				
+				
+	@staticmethod
+	async def file(bot, ctx, frame):	
 
+		if bot.on_file:
+			
+			ctx.chat = Chat(frame["chat"], bot)
+			ctx.message = File(frame["file"], bot)
+			ctx.author = User(frame["user"], bot)
+			ctx.message.author = ctx.author
+			ctx.chat.message = ctx.message
+			ctx.message.chat = ctx.chat
+			ctx.author.is_developer = ctx.author.id == bot.developer
+			await bot.siphon_input(bot.on_file, ctx)
+	
+	
 
 async def user_by_nick(nick: str, bot=None):
 	data = await get_request(host+"/user_by_nick/"+nick)
 	if data["status"] == 200:
 		return User(data["data"], bot)
 		
+		
 async def user_by_id(user_id: str, bot=None):
 	data = await get_request(host+"/user/"+user_id)
 	if data["status"] == 200:
+	
 		return User(data["data"], bot)
-
 
 
 class CTX:
@@ -132,8 +162,7 @@ class CTX:
 	async def user_by_id(self, user_id: str):
 		return user_by_id(nick, self.bot)
 		
-	
-	
+		
 class CTXtype:
 	
 	def __init__(self, data, bot):
@@ -177,6 +206,9 @@ class Chat(CTXtype):
 	async def invite(self, user):
 		await self.bot.invite(self.id, user.id)
 		
+	async def input(self, type=None, timeout=None):
+		return await self.bot.input(self.id, type, timeout)
+		
 			
 class User(CTXtype):
 	
@@ -215,7 +247,8 @@ class Message(CTXtype):
 		super().__init__(data, bot)
 		self.author = None
 		self.chat = None
-		self.args_list = self.text.split(" ")[1:]
+		self.text = self.text.strip()
+		self.args_list = self.text.split(" ")[int(bool(self.text.startswith(bot.prefix))):]
 		self.args = " ".join(self.args_list)
 		self.ts = self.pub_at
 		self.ping = int(time.time()*1000)-self.ts
@@ -225,6 +258,24 @@ class Message(CTXtype):
 		
 	def __ne__(self, other):
 		return self.text != other.text
+		
+		
+class File(CTXtype):
+	
+	def __init__(self, data, bot):
+		super().__init__(data, bot)
+		for k, v in data["file"].items():
+		  setattr(self, k, v)
+		self.author = None
+		self.chat = None
+		self.ts = self.pub_at
+		self.ping = int(time.time()*1000)-self.ts
+		
+	def __eq__(self, other):
+		return self.hash == other.hash
+		
+	def __ne__(self, other):
+		return self.hash != other.hash
 
 
 class Bot:
@@ -238,6 +289,8 @@ class Bot:
 		self.region = region
 		self.api_key = api_key
 		self.prefix = prefix
+		self.user_id = ""
+		self.nick = ""
 		self.commands = {}
 		self.events = {}
 		self.cooldowns = {}
@@ -251,8 +304,9 @@ class Bot:
 		self.chats = []
 		self.ratelimited = False
 		self.open = True
-		self.on_join = self.on_message = None
+		self.on_join = self.on_message = self.on_file = None
 		self.prev_chat_id = self.prev_message = self.prev_nick = None
+		self.siphons = {}
 		self.generate_help_command()
 		self.login()
 		
@@ -324,7 +378,7 @@ class Bot:
 		def container(function):
 		
 			name = function.__name__
-			valid_types = ("user_join", "user_leave", "user_kick", "channel_change", "on_join", "on_message")
+			valid_types = ("user_join", "user_leave", "user_kick", "channel_change", "on_join", "on_message", "on_file")
 			assert (name in valid_types), "Function name for an event must be in "+", ".join(valid_types)
 			
 			if name in valid_types[4:]: setattr(self, name, function)
@@ -381,7 +435,9 @@ class Bot:
 					except LoginError as ex:
 						cprint((str(ex), "red"))
 					
-				else:
+				elif ws_status["type"] == "connection_success":
+					self.nick = ws_status["user_info"]["nick"]
+					self.user_id = ws_status["user_info"]["user_id"]
 					connected = True
 					break
 					
@@ -398,6 +454,7 @@ class Bot:
 
 		await asyncio.sleep(1)
 		cprint(("Bot is online", "magenta"))
+		cprint(("User id", "magenta"), (self.user_id, "yellow"), ("Username", "magenta"), (self.nick, "green"))
 		
 
 	async def run_tasks(self):
@@ -427,7 +484,39 @@ class Bot:
 				
 			except KeyboardInterrupt:
 				return self.disconnect()
-						
+				
+				
+	async def siphon_input(self, callback, ctx):
+		
+		if ctx.chat.id in self.siphons:
+			for t, q in self.siphons[ctx.chat.id].items():
+				if t == any or type(ctx.message) == t:
+					await q.put(ctx.message)
+		
+		if callback:
+			self.run_callback(callback, ctx)
+			
+			
+	async def input(self, chat_id, type=any, timeout=None):
+		
+		if not self.siphons.get(chat_id):
+			self.siphons[chat_id] = {}
+			
+		if not self.siphons[chat_id].get(type):
+			self.siphons[chat_id].update({type: asyncio.Queue()})
+		
+		try:
+			message = await asyncio.wait_for(self.siphons[chat_id][type].get(), timeout)
+		
+		except:
+			message = None
+			
+		del self.siphons[chat_id][type]
+		if not self.siphons[chat_id]:
+			del self.siphons[chat_id]
+			
+		return message
+			
 
 	async def message_queuer(self):
 	
@@ -457,6 +546,7 @@ class Bot:
 			
 			try:
 				payload = json.loads(bytes.fromhex(Parser.version).decode("utf-8"))
+			
 			except:
 				return self.disconnect()
 
@@ -604,8 +694,6 @@ class Bot:
 				response += f"\n\nUse \"{self.prefix}help (category)\" for detailed usage help."
 				
 			await ctx.chat.send(response)
-		
-		
 		
 		
 def seconds_to_str(t):
