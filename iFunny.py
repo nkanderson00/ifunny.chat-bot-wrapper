@@ -61,7 +61,7 @@ class Parser:
 		
 		if frame["error"] == "message_rate_limit":
 			bot.ratelimit()
-			await bot.message_queue.put(bot.ratelimit_queue.pop(0))
+			await bot.message_queue.put(bot.ratelimit_item)
 				
 				
 	@staticmethod
@@ -308,8 +308,8 @@ class Bot:
 		self.open = True
 		self.on_join = self.on_message = self.on_file = None
 		self.prev_chat_id = self.prev_message = self.prev_nick = None
-		self.ratelimit_queue = []
-		self.last_queue_ts = 0
+		self.ratelimit_item = tuple()
+		self.last_send_ts = 0
 		self.siphons = {}
 		self.generate_help_command()
 		self.login()
@@ -554,20 +554,19 @@ class Bot:
 			
 			except:
 				return self.disconnect()
-
+			
+			if time.time() - self.last_send_ts < 0.25:
+				await asyncio.sleep(0.25)
+			
 			await self.ws.send(
 				json.dumps({"type": "message", "message": message,
 				"chat_id": chat_id,
 				"payload": payload}))
 				
 			ratelimit_package = (chat_id, message, nick)
-			
-			if time.time()-self.last_queue_ts < 1:
-				self.ratelimit_queue.append(ratelimit_package)
-			else:
-				self.ratelimit_queue = [ratelimit_package]
-				
-			self.last_queue_ts = time.time()
+			self.ratelimit_item.append(ratelimit_package)
+			self.last_send_ts = time.time()
+
 			
 			
 			
