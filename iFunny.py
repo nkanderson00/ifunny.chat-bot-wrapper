@@ -105,7 +105,7 @@ class Parser:
 				
 		if frame["message"]["text"].startswith(bot.prefix):
 
-			if command_items := frame["message"]["text"].strip(bot.prefix).split()
+			if command_items := frame["message"]["text"].strip(bot.prefix).split():
 				base_name = command_items[0]
 				
 				if function := bot.commands.get(base_name):
