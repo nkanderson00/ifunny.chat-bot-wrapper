@@ -104,10 +104,12 @@ class Parser:
 		ctx.author.is_developer = ctx.author.id == bot.developer
 				
 		if frame["message"]["text"].startswith(bot.prefix):
-			base_name = frame["message"]["text"].strip(bot.prefix).split()[0]
+
+			if command_items := frame["message"]["text"].strip(bot.prefix).split()
+				base_name = command_items[0]
 				
-			if function := bot.commands.get(base_name):
-				await bot.run_command(function, ctx)
+				if function := bot.commands.get(base_name):
+					await bot.run_command(function, ctx)
 				
 		else:
 			await bot.siphon_input(bot.on_message, ctx)
