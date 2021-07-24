@@ -564,7 +564,7 @@ class Bot:
 				"payload": payload}))
 				
 			ratelimit_package = (chat_id, message, nick)
-			self.ratelimit_item.append(ratelimit_package)
+			self.ratelimit_item = ratelimit_package
 			self.last_send_ts = time.time()
 
 			
