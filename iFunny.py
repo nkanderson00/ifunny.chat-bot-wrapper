@@ -61,7 +61,16 @@ class Parser:
 		
 		if frame["error"] == "message_rate_limit":
 			bot.ratelimit()
-			await bot.message_queue.put(bot.ratelimit_item)
+			if package := bot.unconfirmed_queue.get(frame["response_to"]):
+				await asyncio.sleep(0.5)
+				await bot.message_queue.put(package)
+			
+			
+	@staticmethod
+	async def affirmation(bot, ctx, frame):
+		
+		if bot.unconfirmed_queue.get(frame["response_to"]):
+			del bot.unconfirmed_queue[frame["response_to"]]
 				
 				
 	@staticmethod
@@ -101,6 +110,7 @@ class Parser:
 		ctx.message.author = ctx.author
 		ctx.chat.message = ctx.message
 		ctx.message.chat = ctx.chat
+		ctx.chat.author = ctx.author
 		ctx.author.is_developer = ctx.author.id == bot.developer
 				
 		if frame["message"]["text"].startswith(bot.prefix):
@@ -259,7 +269,7 @@ class Chat(CTXtype):
 	async def send(self, message):
 		if self.yield_ratelimit and self.bot.ratelimited: return
 		author_name = None
-		if self.author: author_name = self.author.nick
+		if self.author and self.type != 1: author_name = self.author.nick
 		await self.bot.send_message(self.id, message, author_name)
 		
 	async def upload(self, data):
@@ -308,8 +318,7 @@ class Bot:
 		self.open = True
 		self.on_join = self.on_message = self.on_file = None
 		self.prev_chat_id = self.prev_message = self.prev_nick = None
-		self.ratelimit_item = tuple()
-		self.last_send_ts = 0
+		self.unconfirmed_queue = {}
 		self.siphons = {}
 		self.generate_help_command()
 		self.login()
@@ -527,9 +536,9 @@ class Bot:
 		while self.open:
 		
 			if self.ratelimited:
-				await asyncio.sleep(61)
+				await asyncio.sleep(60)
 				self.unratelimit()
-				self.ratelimit_queue = []
+				self.unconfirmed_queue = {}
 				
 				queue_dict = {}
 				
@@ -541,7 +550,6 @@ class Bot:
 					queue_dict[chat_id].append(message)
 					
 				for k, v in queue_dict.items():
-					#if len(v) == 1: message = v
 					message = "\n\n".join(v)
 					await self.message_queue.put((k, message, None))
 					
@@ -549,25 +557,27 @@ class Bot:
 					
 			chat_id, message, nick = await self.message_queue.get()
 			
+			if self.ratelimited:
+				await self.message_queue.put((chat_id, message, nick))
+				continue
+			
 			try:
 				payload = json.loads(bytes.fromhex(Parser.version).decode("utf-8"))
 			
 			except:
 				return self.disconnect()
-			
-			if time.time() - self.last_send_ts < 0.5:
-				await asyncio.sleep(0.5)
+				
+			request_id = int(time.time()*1000000)
+			package = (chat_id, message, nick)
+			self.unconfirmed_queue[request_id] = package
+			print("putting package:", request_id, package)
 			
 			await self.ws.send(
 				json.dumps({"type": "message", "message": message,
 				"chat_id": chat_id,
+				"request_id": request_id,
 				"payload": payload}))
 				
-			ratelimit_package = (chat_id, message, nick)
-			self.ratelimit_item = ratelimit_package
-			self.last_send_ts = time.time()
-
-			
 			
 			
 	async def send_message(self, chat_id, message, nick=None):
