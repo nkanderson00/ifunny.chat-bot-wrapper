@@ -555,8 +555,8 @@ class Bot:
 			except:
 				return self.disconnect()
 			
-			if time.time() - self.last_send_ts < 0.25:
-				await asyncio.sleep(0.25)
+			if time.time() - self.last_send_ts < 0.5:
+				await asyncio.sleep(0.5)
 			
 			await self.ws.send(
 				json.dumps({"type": "message", "message": message,
