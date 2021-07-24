@@ -538,8 +538,8 @@ class Bot:
 					queue_dict[chat_id].append(message)
 					
 				for k, v in queue_dict.items():
-					if len(v) == 1: message = v
-					else: message = "\n\n".join(v)
+					#if len(v) == 1: message = v
+					message = "\n\n".join(v)
 					await self.message_queue.put((k, message, None))
 					
 				continue
