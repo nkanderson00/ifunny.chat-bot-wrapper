@@ -1,4 +1,4 @@
-import iFunny
+from libs import iFunny
 import asyncio
 import aiohttp
 
