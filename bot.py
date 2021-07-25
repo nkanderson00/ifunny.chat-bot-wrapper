@@ -12,6 +12,31 @@ bot = iFunny.Bot(email, password, region, api_key, prefix)
 
 bot.developer = None #(you can choose to insert the user id of a user who is in charge of the bot)
 
+
+@bot.command(developer=True)
+async def blacklist(ctx, *args):
+	
+	chat = ctx.chat
+	
+	if args:
+		user = await ctx.user(args[0])
+		ctx.bot.blacklist(user)
+		return await chat.send(f"{user.nick} has been blacklisted")
+		
+	await chat.send(ctx.bot.blacklist())
+	
+	
+@bot.command(developer=True)
+async def whitelist(ctx, *args):
+	
+	chat = ctx.chat
+	
+	if args:
+		user = await ctx.user(args[0])
+		ctx.bot.whitelist(user)
+		return await chat.send(f"{user.nick} has been whitelisted")
+
+
 @bot.command(name="hi", aliases=["hey","heyy"], help_message="I will say hi to you")
 async def hello(ctx, *args):
 	"""docstring overridden by decorator kwargs help_message"""
