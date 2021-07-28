@@ -695,8 +695,9 @@ class Bot:
 		
 		
 	def unratelimit(self):
-		self.ratelimited = False
-		cprint(("Ratelimit unlocked", "magenta"))
+		if self.ratelimited:
+			self.ratelimited = False
+			cprint(("Ratelimit unlocked", "magenta"))
 		
 		
 	async def run_command(self, function, ctx):
