@@ -45,4 +45,6 @@ Use this to grab non-command messages (or files or both) within an active comman
 
 ### TODO
 
-Need to add blacklisting functionality. Might consider adding built-in user data file support
+- Document the blacklist functionality
+- Maybe add built-in support for user data storage?
+- improve the default help message
