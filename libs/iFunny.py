@@ -743,10 +743,13 @@ class Bot:
 			self = ctx.bot
 		
 			if args:
-			
+				
 				if command_list := self.help_categories.get(args[0].lower()):
-					response = f"List of commands in the {args[0].title()} category\n\n"
-					response += "\n".join([self.prefix+i for i in self.help_categories[args[0].lower()]])
+					response = "List of commands"
+					response += f"\n▼{args[0].title()}\n\n"
+					response += "\n".join([self.prefix+i for i in command_list
+						if (not self.commands[i] in self.developer_commands or
+						(ctx.author.is_developer and self.commands[i] in self.developer_commands))])
 					response += f"\n\nUse \"{self.prefix}help (command name)\" for detailed usage help."
 			
 				elif function := self.commands.get(args[0]):
@@ -759,11 +762,13 @@ class Bot:
 				
 			else:
 				response = "List of command categories:\n\n"
-				response += "\n".join(["✦"+i for i in self.help_categories.keys() if i])
+				response += "\n".join(["‣"+i for i in self.help_categories.keys() if i])
 				
 				if None in self.help_categories:
 					response += "\n\nUncategorized commands:\n\n"
-					response += "\n".join([self.prefix+i for i in self.help_categories[None]])
+					response += "\n".join([self.prefix+i for i in self.help_categories[None]
+						if (not function in self.developer_commands or
+						(ctx.author.is_developer and function in self.developer_commands))])
 					
 				response += f"\n\nUse \"{self.prefix}help (category)\" for detailed usage help."
 				
