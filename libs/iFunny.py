@@ -11,7 +11,7 @@ import time
 import textwrap
 import sys
 import sqlite3
-import os 
+import os
 
 host = "https://api.ifunny.chat"
 
