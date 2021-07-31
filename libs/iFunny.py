@@ -114,11 +114,13 @@ class Parser:
 		ctx.message.chat = ctx.chat
 		ctx.chat.author = ctx.author
 		ctx.author.is_developer = ctx.author.id == bot.developer
+		
+		frame["message"]["text"] = frame["message"]["text"].strip()
 				
 		if frame["message"]["text"].startswith(bot.prefix):
 
-			if command_items := frame["message"]["text"].strip(bot.prefix).split():
-				base_name = command_items[0]
+			if command_items := frame["message"]["text"].strip(bot.prefix).strip().split():
+				base_name = command_items[0].lower()
 				
 				if function := bot.commands.get(base_name):
 					await bot.run_command(function, ctx)
