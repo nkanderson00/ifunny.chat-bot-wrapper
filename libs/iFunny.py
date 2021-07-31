@@ -767,8 +767,8 @@ class Bot:
 				if None in self.help_categories:
 					response += "\n\nUncategorized commands:\n\n"
 					response += "\n".join([self.prefix+i for i in self.help_categories[None]
-						if (not function in self.developer_commands or
-						(ctx.author.is_developer and function in self.developer_commands))])
+						if (not self.commands[i] in self.developer_commands or
+						(ctx.author.is_developer and self.commands[i] in self.developer_commands))])
 					
 				response += f"\n\nUse \"{self.prefix}help (category)\" for detailed usage help."
 				
