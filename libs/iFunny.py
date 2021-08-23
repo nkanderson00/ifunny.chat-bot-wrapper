@@ -344,19 +344,27 @@ class Bot:
 		payload = json.dumps({"email": self.email,
 			"password": self.password, "region": self.region,
 			"apikey": self.api_key})
-			
-		try:
-			login = requests.post(url, data=payload)
-			login = login.json()
-			
-		except (json.decoder.JSONDecodeError, simplejson.errors.JSONDecodeError):
-			raise LoginError("The server accepted the login request but did not reply. Try again later.")
 		
-		except:
-			raise LoginError("A complete failure occurred while contacting the server to login.")
-		
-		if login["error"]:
-			raise LoginError("An error occurred while attempting to login: "+login["error_description"])
+		while True:
+			
+			try:
+				login = requests.post(url, data=payload)
+				login = login.json()
+
+			except (json.decoder.JSONDecodeError, simplejson.errors.JSONDecodeError):
+				cprint(("The server accepted the login request but did not reply. Trying again...", "red"))
+				time.sleep(10)
+				continue
+
+			except:
+				cprint("There was no reply from the server for login. Trying again...", "red"))
+				time.sleep(10)
+				continue
+
+			if login["error"]:
+				raise LoginError("A fatal error occurred while attempting to login: "+login["error_description"])
+				
+			break
 		
 		self.bearer = login["bearer"]
 		self.user_id = login["user_id"]
