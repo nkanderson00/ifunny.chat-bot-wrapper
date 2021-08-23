@@ -357,7 +357,7 @@ class Bot:
 				continue
 
 			except:
-				cprint("There was no reply from the server for login. Trying again...", "red"))
+				cprint(("There was no reply from the server for login. Trying again...", "red"))
 				time.sleep(10)
 				continue
 
