@@ -635,11 +635,15 @@ class Bot:
 			package = (chat_id, message, nick)
 			self.unconfirmed_queue[request_id] = package
 			
-			await self.ws.send(
-				json.dumps({"type": "message", "message": message,
-				"chat_id": chat_id,
-				"request_id": request_id,
-				"payload": payload}))
+			try:
+				await self.ws.send(
+					json.dumps({"type": "message", "message": message,
+					"chat_id": chat_id,
+					"request_id": request_id,
+					"payload": payload}))
+				
+			except Exception as ex:
+				cprint(("Failed to send message because:", "magenta"), (str(ex), "red"))
 				
 			
 			
